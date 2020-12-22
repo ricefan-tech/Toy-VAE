@@ -4,14 +4,15 @@ from sklearn import utils
 from tqdm.auto import tqdm
 import tensorflow as tf
 
-class CVAE(object):
-    """Conditional Variational Auto Encoder (CVAE)."""
+class VAE(object):
+    """Variational Auto Encoder (VAE)."""
 
     def __init__(self, n_latent, n_hidden=50, alpha=0.5):
         self.n_latent = n_latent
         self.n_hidden = n_hidden
         self.alpha = alpha
-
+    
+    #activation function
     def lrelu(self, x, alpha=0.3):
         return tf.maximum(x, tf.multiply(x, alpha))
     
@@ -43,6 +44,8 @@ class CVAE(object):
     def train(self, data, n_epochs=10000, learning_rate=0.005,
               show_progress=False):
         data = utils.as_float_array(data)
+        
+        #scale input data
         assert data.max() <= 1. and data.min() >=0., \
             "All features of the dataset must be between 0 and 1."
         tf.reset_default_graph()
@@ -50,8 +53,11 @@ class CVAE(object):
         X_in = tf.placeholder(dtype=tf.float32, shape=[None, input_dim], name="X")
         Y = tf.placeholder(dtype=tf.float32, shape=[None, input_dim], name="Y")
         Y_flat = Y
+        
         self.sampled, mn, sd = self.encoder(X_in,input_dim=input_dim)
         self.dec = self.decoder(self.sampled, input_dim=input_dim)
+        
+        #reshape decoder output
         unreshaped = tf.reshape(self.dec, [-1, input_dim])
         decoded_loss = tf.reduce_sum(tf.squared_difference(unreshaped, Y_flat), 1)
         latent_loss = -0.5 * tf.reduce_sum(1. + sd - tf.square(mn) - tf.exp(sd), 1)
@@ -64,16 +70,17 @@ class CVAE(object):
             self.sess.run(optimizer, feed_dict={X_in: data,  Y: data})
             if not i % 100 and show_progress:
                 ls, recon, KL, d = self.sess.run([self.loss,tf.reduce_mean(decoded_loss), tf.reduce_mean(latent_loss), self.dec], feed_dict={X_in: data, Y: data})
-
+                
+                #choose random axes to output scatterplot of real data vs decoder output
                 projections = np.random.randint(0, data.shape[1], size=2)
-            
                 plt.scatter(data[:, projections[0]], data[:, projections[1]])
                 plt.scatter(d[:, projections[0]], d[:, projections[1]])
                 plt.xlabel(str(projections[0]))
                 plt.ylabel(str(projections[1]))
                 plt.show()
         self.samp_eval=self.sampled.eval(session=self.sess,feed_dict={X_in:data})   
-
+    
+    #generate new samples from random noise
     def generate(self,  n_samples=None):
         if n_samples is not None:
             randoms = np.random.normal(0, 1, size=(n_samples, self.n_latent))
