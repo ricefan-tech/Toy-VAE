@@ -17,6 +17,13 @@ import mgarch as mg
 import statsmodels.api as sm
 from sklearn.preprocessing import MinMaxScaler
 
+n_latent=2, 
+n_hidden=100,
+alpha=0.5,
+n_epochs=1000, 
+learning_rate=0.0001
+
+
 #generate 3-dimensional samples with desired correlation and marginal distribution
 def getdata(dof=5, samp=10000, mean=[0.,2.,0.], final_cov=[1.,2.,1.], cov=[[1.,-0.8,0.],
                                                                            [-0.8,1.,0.5],
@@ -100,8 +107,8 @@ if __name__ == '__main__':
     data_scaled = scaler.fit_transform(data)
    
     #create and train VAE
-    VAE=VAE(n_latent=2, n_hidden=100,alpha=0.5)
-    VAE.train(data=data_scaled, n_epochs=1000, learning_rate=0.0001, show_progress=True)
+    VAE=VAE(n_latent=n_latent, n_hidden=n_hidden,alpha=alpha)
+    VAE.train(data=data_scaled, n_epochs=n_epochs, learning_rate=learning_rate, show_progress=True)
     
     #%%
     #robustness test with statistics calculation/plotting 
